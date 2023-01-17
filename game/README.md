@@ -1,20 +1,24 @@
 # Chess Game Design
 ## Data Structures
 
-Pieces
-- Position: A 64-bit uint, flattened 8x8 bit field
-- PieceType: A 8-bit uint, id's (W/B),R,B,N,Q,K,P & captured status
-- Board_ptr
+Board: CCR
+We need to know all relevent information on the board (pieces and positions), 
+so we can create and update each piece's move sets. There are 6 different types 
+of pieces, 2 colors or 12 distinct piece types. We also need to account for en
+passant captures, and castling oportunities. Castling will be determined by
+board state and first move indicators, so we also need a first move indicator.
+Thats a total of 14 different square states, which we can fit in 4 bits.
 
-Board
-- Positions - Contains all of the positions of the pieces (for validation)
-- Turn_ind - a bit (1 = white, 0 = black)
-- Halfmove Clock - a FEN thing
-- Fullmove Number - Number of moves. Starts at 1 and increments after black's move
-    
-Game
-- Summons players (input)
-- Manages their boards (output)
-- Maintains order (rules)
-    
-    
+We can represent each rank (row) with 32 bits (8 * 4), so the board can be 
+fully described with 8 32-bit registers, 32 bytes. Pretty good.
+
+Moves:
+We're going to create an event driven board that only allows legal moves,
+determining pinned pieces and required moves/captures. 
+
+At most there can be 160 moves (fewer if we account for board position), so a 
+move has to be represented by only a byte if we want to keep this under 256B.
+
+
+GUI: 
+I'm hoping to use cutechess as a front-end. Or maybe a fork of it
