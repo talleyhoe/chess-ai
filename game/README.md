@@ -15,10 +15,9 @@ fully described with 8 32-bit registers, 32 bytes. Pretty good.
 Moves:
 We're going to create an event driven board that only allows legal moves,
 determining pinned pieces and required moves/captures. 
+At most there can be 160 moves (fewer if we account for board position).
 
-At most there can be 160 moves (fewer if we account for board position), so a 
-move has to be represented by only a byte if we want to keep this under 256B.
-
-
-GUI: 
-I'm hoping to use cutechess as a front-end. Or maybe a fork of it
+Future Improvements:
+    Moves:
+        The pieces can be divided based on their move characteristics, and 
+        generated at the same time via a SIMD schema.
