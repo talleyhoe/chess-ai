@@ -15,4 +15,22 @@ Board init_board() {
     return game_board;
 }
 
+uint8_t left_slide(Player& agent, Square* spot) {
+    uint8_t length = 0;
+    bool search = 1;
+    Square final_destination;
+    while search {
+    } if (length) {
+        SlideMove move = 
+    return length;
+}
+
+uint8_t square_slide(Player& agent, Square* spot) {
+    uint8_t valid_moves = 0;
+    uint8_t length = 0;
+
+    // Scan around the spot to determine valid lengths
+    // If you find valid (non-zero length) moves pop onto move list
+    return valid_moves;
+}
 

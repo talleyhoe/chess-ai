@@ -35,7 +35,9 @@ typedef struct {
 struct Player {
     bool is_black;
     PlaceMove p_moves[48];
+    uint8_t p_move_cnt;
     SlideMove s_moves[16];
+    uint8_t s_move_cnt;
 };
 
 typedef struct {
