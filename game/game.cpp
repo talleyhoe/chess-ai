@@ -1,6 +1,14 @@
 
 #include "game.h"
 
+Player init_player(bool is_black) {
+    Player magnus = { .is_black = false };
+    return magnus;
+}
+
+void gen_moves(Player& player) {
+}
+
 Board init_board() {
     Board game_board;
     game_board.rank_register[0] = 0x23456432;
@@ -11,26 +19,23 @@ Board init_board() {
     game_board.rank_register[5] = 0x00000000;
     game_board.rank_register[6] = 0x99999999;
     game_board.rank_register[7] = 0xABCDECBA;
+
+
     game_board.black_turn = 0;
+
     return game_board;
 }
 
-uint8_t left_slide(Player& agent, Square* spot) {
-    uint8_t length = 0;
-    bool search = 1;
-    Square final_destination;
-    while search {
-    } if (length) {
-        SlideMove move = 
-    return length;
+Game start_game() {
+    Game new_game = {
+        .board = init_board(),
+        .white = init_player(0),
+        .black = init_player(1),
+        .outcome = active
+    };
+    return new_game;
 }
 
-uint8_t square_slide(Player& agent, Square* spot) {
-    uint8_t valid_moves = 0;
-    uint8_t length = 0;
-
-    // Scan around the spot to determine valid lengths
-    // If you find valid (non-zero length) moves pop onto move list
-    return valid_moves;
-}
-
+// Turn layout
+//  generate (new) moves
+//  

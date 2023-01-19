@@ -1,10 +1,11 @@
 
 #include <cstdint>
 #include <stack> // May need to implement our own stack for cuda
+#include <vector>
 
 // Odd pieces have absolute movement, even pieces slide
 // Last bit 'black' is allocated as a bit
-enum pieces {
+enum piece {
     pawn   = 1,
     rook   = 2,
     knight = 3,
@@ -15,35 +16,34 @@ enum pieces {
     black  = 8
 };
 
+// may want to swap these around to utilize bitwise operands
+enum result {
+    active,
+    win,
+    loss,
+    resign,
+    stalemate
+};
+
 typedef struct {
     uint32_t mask;
     uint8_t rank;
 } Square;
 
 typedef struct {
-    int8_t h_offset;
-    int8_t v_offset;
     Square* source;
-} PlaceMove;
+    Square* dest;
+} Move;
 
 typedef struct {
-    int8_t direction;
-    uint8_t max_len;
-    Square* source;
-} SlideMove;
-
-struct Player {
-    bool is_black;
-    PlaceMove p_moves[48];
-    uint8_t p_move_cnt;
-    SlideMove s_moves[16];
-    uint8_t s_move_cnt;
-};
-
-typedef struct {
-    int8_t source;
-    int8_t dest;
+    uint8_t source;
+    uint8_t dest;
 } Ply;
+
+typedef struct {
+    bool is_black;
+    std::vector<Move> moves;
+} Player;
 
 typedef struct {
     uint32_t rank_register[8];
@@ -51,3 +51,9 @@ typedef struct {
     bool black_turn;
 } Board;
 
+typedef struct {
+    Board board;
+    Player white;
+    Player black;
+    enum result outcome;
+} Game;
