@@ -2,8 +2,6 @@
 #include <cstdint>
 #include <stdint.h>
 
-
-// I'm stealing a lot of code from Daniel Inführ. Checkout his engine Gigantua
 #ifdef _MSC_VER
 #define _ASSUME(cond) __assume(cond)
 #define _Compiletime __forceinline static constexpr
@@ -33,11 +31,11 @@
 
 typedef uint64_t map;
 
-enum class Direction : int_fast8_t {
+enum Direction : int_fast8_t {
     NORTH =  8,
-    EAST  = -1,
+    EAST  =  1,
     SOUTH = -8, 
-    WEST  =  1,
+    WEST  = -1,
 
     NORTH_EAST = NORTH + EAST,
     NORTH_WEST = NORTH + WEST,
@@ -45,7 +43,8 @@ enum class Direction : int_fast8_t {
     SOUTH_WEST = SOUTH + WEST,
 };
 
-enum class Rank : map {
+namespace Rank {
+enum Rank : map {
     R1 = 0x00000000000000FFull,
     R2 = 0x000000000000FF00ull,
     R3 = 0x0000000000FF0000ull,
@@ -55,8 +54,10 @@ enum class Rank : map {
     R7 = 0x00FF000000000000ull,
     R8 = 0xFF00000000000000ull
 };
+}
 
-enum class File : map {
+namespace File {
+enum File : map {
     FA = 0x0101010101010101ull,
     FB = 0x0202020202020202ull,
     FC = 0x0404040404040404ull,
@@ -66,7 +67,7 @@ enum class File : map {
     FG = 0x4040404040404040ull,
     FH = 0x8080808080808080ull
 };
-    
+}
 
 // Pieces only have position and color;
 class PieceSet {
@@ -76,17 +77,81 @@ class PieceSet {
 };
 
 // Specific pieces have move sets
+    // Move mask captures the effect of pins and enemy_or_empty
+
+// NOTE: I don't think I need the offsides_masks. Check before/after removal
 class Knight: public PieceSet {
+
     constexpr map MoveNNE(map move_mask) {
         map offsides_mask = ~(Rank::R8 | Rank::R7 | File::FA);
         map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = (2 * Direction::NORTH) + Direction::EAST;
+        return (legal_knights << offset) & move_mask;
+    }
 
-        return legal_knights << (Direction
+    constexpr map MoveNNW(map move_mask) {
+        map offsides_mask = ~(Rank::R8 | Rank::R7 | File::FH);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = (2 * Direction::NORTH) + Direction::WEST;
+        return (legal_knights << offset) & move_mask;
+    }
 
+    constexpr map MoveNEE(map move_mask) {
+        map offsides_mask = ~(Rank::R8 | File::FA | File::FB);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = Direction::NORTH + (2 * Direction::EAST);
+        return (legal_knights << offset) & move_mask;
+    }
 
-    // Move mask captures the effect of pins and enemy_or_empty
+    constexpr map MoveNWW(map move_mask) {
+        map offsides_mask = ~(Rank::R8 | File::FG | File::FH);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = Direction::NORTH + (2 * Direction::WEST);
+        return (legal_knights << offset) & move_mask;
+    }
+
+    constexpr map MoveSSE(map move_mask) {
+        map offsides_mask = ~(Rank::R1 | Rank::R2 | File::FA);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::EAST;
+        return (legal_knights >> offset) & move_mask;
+    }
+
+    constexpr map MoveSSW(map move_mask) {
+        map offsides_mask = ~(Rank::R1 | Rank::R2 | File::FH);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::WEST;
+        return (legal_knights >> offset) & move_mask;
+    }
+
+    constexpr map MoveSEE(map move_mask) {
+        map offsides_mask = ~(Rank::R1 | File::FA | File::FB);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = Direction::SOUTH + (2 * Direction::EAST);
+        return (legal_knights >> offset) & move_mask;
+    }
+
+    constexpr map MoveSWW(map move_mask) {
+        map offsides_mask = ~(Rank::R1 | File::FG | File::FH);
+        map legal_knights = (this->position & offsides_mask);
+        uint_fast8_t offset = Direction::SOUTH + (2 * Direction::WEST);
+        return (legal_knights >> offset) & move_mask;
+    }
+
     template <Direction white>
     constexpr map GenMoves(map move_mask) {
+        map legal_moves = ( MoveNNE(move_mask) | MoveNNW(move_mask) | 
+                            MoveNEE(move_mask) | MoveNWW(move_mask) |
+                            MoveSSE(move_mask) | MoveSSW(move_mask) |
+                            MoveSEE(move_mask) | MoveSWW(move_mask) );
+        return legal_moves;
+    }
+};
+
+// Move mask captures the effect of pins and enemy_or_empty
+class Bishop : public PieceSet {
+    constexpr map GenAttackMask() {
+        map rank_mask = ( this->position;
         return 0ull;
     }
 };
@@ -127,7 +192,7 @@ class Board {
             {}
     
     template <bool is_white>
-    constexpr map enemy_or_empty() {
+    constexpr map EnemyOrEmpty() {
         if (is_white) { return ~(this->white_pieces); }
         else          { return ~(this->black_pieces); }
     }
