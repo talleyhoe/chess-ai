@@ -3,7 +3,7 @@ let s:so_save = &g:so | let s:siso_save = &g:siso | setg so=0 siso=0 | setl so=-
 let v:this_session=expand("<sfile>:p")
 silent only
 silent tabonly
-cd ~/Code/chess-ai/src
+cd ~/Code/opah/src
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
@@ -13,27 +13,21 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +0 chess-ai
-badd +0 game.cpp
-badd +0 game.h
+badd +77 game.cpp
 badd +0 main.cpp
 badd +0 Makefile
+badd +226611 ~/.local/state/nvim/lsp.log
 argglobal
 %argdel
-$argadd chess-ai
 $argadd game.cpp
-$argadd game.h
 $argadd main.cpp
 $argadd Makefile
 set stal=2
 tabnew +setlocal\ bufhidden=wipe
 tabnew +setlocal\ bufhidden=wipe
-tabnew +setlocal\ bufhidden=wipe
 tabrewind
 edit game.cpp
 argglobal
-2argu
-balt chess-ai
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -43,39 +37,19 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
+94,148fold
 let &fdl = &fdl
-let s:l = 68 - ((67 * winheight(0) + 43) / 86)
+let s:l = 165 - ((9 * winheight(0) + 23) / 46)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 68
-normal! 0
-tabnext
-edit game.h
-argglobal
-3argu
-balt chess-ai
-setlocal fdm=manual
-setlocal fde=0
-setlocal fmr={{{,}}}
-setlocal fdi=#
-setlocal fdl=0
-setlocal fml=1
-setlocal fdn=20
-setlocal fen
-silent! normal! zE
-let &fdl = &fdl
-let s:l = 1 - ((0 * winheight(0) + 23) / 46)
-if s:l < 1 | let s:l = 1 | endif
-keepjumps exe s:l
-normal! zt
-keepjumps 1
-normal! 0
+keepjumps 165
+normal! 051|
 tabnext
 edit main.cpp
 argglobal
-4argu
-balt chess-ai
+2argu
+balt game.cpp
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -95,8 +69,8 @@ normal! 0
 tabnext
 edit Makefile
 argglobal
-5argu
-balt chess-ai
+3argu
+balt game.cpp
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}

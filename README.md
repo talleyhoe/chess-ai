@@ -1,2 +1,2 @@
-# chess-ai
-My own chess ai
+# Opah
+My own chess engine

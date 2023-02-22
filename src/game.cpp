@@ -43,7 +43,6 @@ enum Direction : int_fast8_t {
     SOUTH_WEST = SOUTH + WEST,
 };
 
-namespace Rank {
 enum Rank : map {
     R1 = 0x00000000000000FFull,
     R2 = 0x000000000000FF00ull,
@@ -54,9 +53,7 @@ enum Rank : map {
     R7 = 0x00FF000000000000ull,
     R8 = 0xFF00000000000000ull
 };
-}
 
-namespace File {
 enum File : map {
     FA = 0x0101010101010101ull,
     FB = 0x0202020202020202ull,
@@ -67,6 +64,19 @@ enum File : map {
     FG = 0x4040404040404040ull,
     FH = 0x8080808080808080ull
 };
+
+template <Direction D>
+constexpr int_fast8_t BitwiseAbs() {
+    int_fast8_t positive_dir = D >> 7;
+    positive_dir ^= (D + positive_dir); 
+    return positive_dir;
+}
+
+
+template <Direction D>
+constexpr map ShiftBoard(map bitboard, uint_fast8_t length = 1) {
+    if (D < 0) { return bitboard >> ( BitwiseAbs<D>() * length ); }
+    else       { return bitboard << ( BitwiseAbs<D>() * length ); }
 }
 
 // Pieces only have position and color;
@@ -79,7 +89,7 @@ class PieceSet {
 // Specific pieces have move sets
     // Move mask captures the effect of pins and enemy_or_empty
 
-// NOTE: I don't think I need the offsides_masks. Check before/after removal
+// NOTE: I think I only need the E/W offsides_masks, but N/S should overflow
 class Knight: public PieceSet {
 
     constexpr map MoveNNE(map move_mask) {
@@ -149,11 +159,41 @@ class Knight: public PieceSet {
 };
 
 // Move mask captures the effect of pins and enemy_or_empty
-class Bishop : public PieceSet {
-    constexpr map GenAttackMask() {
-        map rank_mask = ( this->position;
-        return 0ull;
+
+class CardinalSlider: public PieceSet {
+
+    constexpr map FillSouth(map empty) {
+        map mask = this->position;
+        mask |= empty & ShiftBoard<SOUTH>(mask, 1);
+        empty &= ShiftBoard<SOUTH>(empty, 1);
+        mask |= empty & ShiftBoard<SOUTH>(mask, 2);
+        empty &= ShiftBoard<SOUTH>(empty, 2);
+        mask |= empty & ShiftBoard<SOUTH>(mask, 4);
+        return mask;
     }
+
+    constexpr map FillNorth(map empty) {
+        map mask = this->position;
+        mask |= empty & ShiftBoard<NORTH>(mask, 1);
+        empty &= ShiftBoard<NORTH>(empty, 1);
+        mask |= empty & ShiftBoard<NORTH>(mask, 2);
+        empty &= ShiftBoard<NORTH>(empty, 2);
+        mask |= empty & ShiftBoard<NORTH>(mask, 4);
+        return mask;
+    }
+
+    constexpr map FillEast(map empty) {
+        map mask = this->position;
+        empty &= ~(File::FA);
+
+
+};
+
+class OrdinalSlider: public PieceSet {
+};
+
+class Bishop : public PieceSet {
+
 };
 
 // A board knows all pieces and checkmasks
