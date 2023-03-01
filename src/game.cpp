@@ -2,34 +2,12 @@
 #include <cstdint>
 #include <stdint.h>
 
-#ifdef _MSC_VER
-#define _ASSUME(cond) __assume(cond)
-#define _Compiletime __forceinline static constexpr
-#define _NoInline __declspec(noinline)
-#define _Inline inline
-#define _ForceInline __forceinline
-#define Bitcount(X) __popcnt64(X)
-#elif defined(__clang__)
-#define _ASSUME(cond) ((cond) ? static_cast<void>(0) : __builtin_unreachable())
-#define _Compiletime __attribute__((always_inline)) static constexpr
-#define _NoInline __attribute__((noinline))
-#define _Inline inline 
-#define _ForceInline __attribute__((always_inline))
-#define Bitcount(X) static_cast<uint64_t>(__builtin_popcountll(X))
-#elif defined(__GNUC__)
-#define _ASSUME(cond) ((cond) ? static_cast<void>(0) : __builtin_unreachable())
-#define _Compiletime __attribute__((always_inline)) static constexpr
-#define _NoInline __attribute__ ((noinline))
-#define _Inline inline
-#define _ForceInline __attribute__((always_inline)) inline
-#define Bitcount(X) static_cast<uint64_t>(__builtin_popcountll(X))
-#else
-#define _ASSUME(cond) static_cast<void>(!!(cond))
-#define _Compiletime static constexpr
-#define _Inline inline 
-#endif
-
 typedef uint64_t map;
+
+enum Color : bool {
+    BLACK = 0,
+    WHITE = 1,
+};
 
 enum Direction : int_fast8_t {
     NORTH =  8,
@@ -82,154 +60,391 @@ constexpr map ShiftBoard(map bitboard, uint_fast8_t length = 1) {
 // Pieces only have position and color;
 class PieceSet {
     public:
-        uint64_t position;
+        map position;
         bool white;
+
+        constexpr PieceSet(map pos, bool is_white) :
+            position(pos), white(is_white)
+        {}
 };
 
 // Specific pieces have move sets
     // Move mask captures the effect of pins and enemy_or_empty
 
 // NOTE: I think I only need the E/W offsides_masks, but N/S should overflow
-class Knight: public PieceSet {
-
-    constexpr map MoveNNE(map move_mask) {
-        map offsides_mask = ~(Rank::R8 | Rank::R7 | File::FA);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = (2 * Direction::NORTH) + Direction::EAST;
-        return (legal_knights << offset) & move_mask;
-    }
-
-    constexpr map MoveNNW(map move_mask) {
-        map offsides_mask = ~(Rank::R8 | Rank::R7 | File::FH);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = (2 * Direction::NORTH) + Direction::WEST;
-        return (legal_knights << offset) & move_mask;
-    }
-
-    constexpr map MoveNEE(map move_mask) {
-        map offsides_mask = ~(Rank::R8 | File::FA | File::FB);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = Direction::NORTH + (2 * Direction::EAST);
-        return (legal_knights << offset) & move_mask;
-    }
-
-    constexpr map MoveNWW(map move_mask) {
-        map offsides_mask = ~(Rank::R8 | File::FG | File::FH);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = Direction::NORTH + (2 * Direction::WEST);
-        return (legal_knights << offset) & move_mask;
-    }
-
-    constexpr map MoveSSE(map move_mask) {
-        map offsides_mask = ~(Rank::R1 | Rank::R2 | File::FA);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::EAST;
-        return (legal_knights >> offset) & move_mask;
-    }
-
-    constexpr map MoveSSW(map move_mask) {
-        map offsides_mask = ~(Rank::R1 | Rank::R2 | File::FH);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::WEST;
-        return (legal_knights >> offset) & move_mask;
-    }
-
-    constexpr map MoveSEE(map move_mask) {
-        map offsides_mask = ~(Rank::R1 | File::FA | File::FB);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = Direction::SOUTH + (2 * Direction::EAST);
-        return (legal_knights >> offset) & move_mask;
-    }
-
-    constexpr map MoveSWW(map move_mask) {
-        map offsides_mask = ~(Rank::R1 | File::FG | File::FH);
-        map legal_knights = (this->position & offsides_mask);
-        uint_fast8_t offset = Direction::SOUTH + (2 * Direction::WEST);
-        return (legal_knights >> offset) & move_mask;
-    }
-
-    template <Direction white>
-    constexpr map GenMoves(map move_mask) {
-        map legal_moves = ( MoveNNE(move_mask) | MoveNNW(move_mask) | 
-                            MoveNEE(move_mask) | MoveNWW(move_mask) |
-                            MoveSSE(move_mask) | MoveSSW(move_mask) |
-                            MoveSEE(move_mask) | MoveSWW(move_mask) );
-        return legal_moves;
-    }
-};
-
 // Move mask captures the effect of pins and enemy_or_empty
 
-class CardinalSlider: public PieceSet {
+class CardinalSlider {
+    public:
+        constexpr map MoveS(map empty) {
+            map mask = this->position;
+            mask |= empty & ShiftBoard<SOUTH>(mask, 1);
+            empty &= ShiftBoard<SOUTH>(empty, 1);
+            mask |= empty & ShiftBoard<SOUTH>(mask, 2);
+            empty &= ShiftBoard<SOUTH>(empty, 2);
+            mask |= empty & ShiftBoard<SOUTH>(mask, 4);
+            return mask;
+        }
 
-    constexpr map FillSouth(map empty) {
-        map mask = this->position;
-        mask |= empty & ShiftBoard<SOUTH>(mask, 1);
-        empty &= ShiftBoard<SOUTH>(empty, 1);
-        mask |= empty & ShiftBoard<SOUTH>(mask, 2);
-        empty &= ShiftBoard<SOUTH>(empty, 2);
-        mask |= empty & ShiftBoard<SOUTH>(mask, 4);
-        return mask;
-    }
+        constexpr map MoveN(map empty) {
+            map mask = this->position;
+            mask |= empty & ShiftBoard<NORTH>(mask, 1);
+            empty &= ShiftBoard<NORTH>(empty, 1);
+            mask |= empty & ShiftBoard<NORTH>(mask, 2);
+            empty &= ShiftBoard<NORTH>(empty, 2);
+            mask |= empty & ShiftBoard<NORTH>(mask, 4);
+            return mask;
+        }
 
-    constexpr map FillNorth(map empty) {
-        map mask = this->position;
-        mask |= empty & ShiftBoard<NORTH>(mask, 1);
-        empty &= ShiftBoard<NORTH>(empty, 1);
-        mask |= empty & ShiftBoard<NORTH>(mask, 2);
-        empty &= ShiftBoard<NORTH>(empty, 2);
-        mask |= empty & ShiftBoard<NORTH>(mask, 4);
-        return mask;
-    }
+        constexpr map MoveE(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FA);
+            mask |= empty & ShiftBoard<EAST>(mask, 1);
+            empty &= ShiftBoard<EAST>(empty,1);
+            mask |= empty & ShiftBoard<EAST>(mask, 2);
+            empty &= ShiftBoard<EAST>(empty,2);
+            mask |= empty & ShiftBoard<EAST>(mask, 4);
+            return mask;
+        }
 
-    constexpr map FillEast(map empty) {
-        map mask = this->position;
-        empty &= ~(File::FA);
-
-
+        constexpr map MoveW(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FH);
+            mask |= empty & ShiftBoard<EAST>(mask, 1);
+            empty &= ShiftBoard<EAST>(empty,1);
+            mask |= empty & ShiftBoard<EAST>(mask, 2);
+            empty &= ShiftBoard<EAST>(empty,2);
+            mask |= empty & ShiftBoard<EAST>(mask, 4);
+            return mask;
+        }
 };
 
-class OrdinalSlider: public PieceSet {
+class OrdinalSlider {
+    public:
+        constexpr map MoveSE(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FA);
+            mask |= empty & ShiftBoard<SOUTH_EAST>(mask, 1);
+            empty &= ShiftBoard<SOUTH_EAST>(empty,1);
+            mask |= empty & ShiftBoard<SOUTH_EAST>(mask, 2);
+            empty &= ShiftBoard<SOUTH_EAST>(empty,2);
+            mask |= empty & ShiftBoard<SOUTH_EAST>(mask, 4);
+            return mask;
+        }
+
+        constexpr map MoveSW(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FH);
+            mask |= empty & ShiftBoard<SOUTH_WEST>(mask, 1);
+            empty &= ShiftBoard<SOUTH_WEST>(empty,1);
+            mask |= empty & ShiftBoard<SOUTH_WEST>(mask, 2);
+            empty &= ShiftBoard<SOUTH_WEST>(empty,2);
+            mask |= empty & ShiftBoard<SOUTH_WEST>(mask, 4);
+            return mask;
+        }
+
+        constexpr map MoveNE(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FA);
+            mask |= empty & ShiftBoard<NORTH_EAST>(mask, 1);
+            empty &= ShiftBoard<NORTH_EAST>(empty,1);
+            mask |= empty & ShiftBoard<NORTH_EAST>(mask, 2);
+            empty &= ShiftBoard<NORTH_EAST>(empty,2);
+            mask |= empty & ShiftBoard<NORTH_EAST>(mask, 4);
+            return mask;
+        }
+
+        constexpr map MoveNW(map empty) {
+            map mask = this->position;
+            empty &= ~(File::FH);
+            mask |= empty & ShiftBoard<NORTH_WEST>(mask, 1);
+            empty &= ShiftBoard<NORTH_WEST>(empty,1);
+            mask |= empty & ShiftBoard<NORTH_WEST>(mask, 2);
+            empty &= ShiftBoard<NORTH_WEST>(empty,2);
+            mask |= empty & ShiftBoard<NORTH_WEST>(mask, 4);
+            return mask;
+        }
 };
 
-class Bishop : public PieceSet {
+class Rook : public PieceSet, public CardinalSlider {
+    public:
+        constexpr Rook(map pos, bool white) : PieceSet(pos, white)
+        {}
 
+        template<bool white>
+        constexpr Rook() {
+            if constexpr (white) { PieceSet(0x0000000000000081ull, white); }
+            else                 { PieceSet(0x8100000000000000ull, white); }
+        }
+
+        constexpr map GenMoves(map& move_mask, map& empty) {
+            map legal_moves = ( MoveE(empty) | MoveW(empty) |
+                                MoveN(empty) | MoveS(empty) );
+            legal_moves &= move_mask;
+            return legal_moves;
+        }
+};
+
+class Bishop : public PieceSet, public OrdinalSlider {
+    public:
+        constexpr Bishop(map pos, bool white) : PieceSet(pos, white)
+        {}
+
+        constexpr map GenMoves(map& move_mask, map& empty) {
+            map legal_moves = ( MoveNE(empty) | MoveNW(empty) |
+                                MoveSE(empty) | MoveSW(empty) );
+            legal_moves &= move_mask;
+            return legal_moves;
+        }
+};
+
+class Queen : public PieceSet, public CardinalSlider, public OrdinalSlider {
+    public:
+        constexpr Queen(map pos, bool white) : PieceSet(pos, white)
+        {}
+
+        constexpr map GenMoves(map& move_mask, map& empty) {
+            map legal_moves = ( MoveNW(empty) | MoveNE(empty) |
+                                MoveSW(empty) | MoveSE(empty) |
+                                MoveN(empty)  | MoveS(empty)  |
+                                MoveE(empty)  | MoveW(empty)  );
+            legal_moves &= move_mask;
+            return legal_moves;
+        }
+};
+
+// Knights and Kings should really use a lookup table w/ index
+class Knight: public PieceSet {
+    public:
+        constexpr Knight(map pos, bool white) : PieceSet(pos, white)
+        {}
+
+        constexpr map MoveNNE(map empty) {
+            map offsides_mask = ~(File::FA);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = (2 * Direction::NORTH) + Direction::EAST;
+            return (legal_knights << offset) & empty;
+        }
+
+        constexpr map MoveNNW(map empty) {
+            map offsides_mask = ~(File::FH);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = (2 * Direction::NORTH) + Direction::WEST;
+            return (legal_knights << offset) & empty;
+        }
+
+        constexpr map MoveNEE(map empty) {
+            map offsides_mask = ~(File::FA | File::FB);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = Direction::NORTH + (2 * Direction::EAST);
+            return (legal_knights << offset) & empty;
+        }
+
+        constexpr map MoveNWW(map empty) {
+            map offsides_mask = ~(File::FG | File::FH);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = Direction::NORTH + (2 * Direction::WEST);
+            return (legal_knights << offset) & empty;
+        }
+
+        constexpr map MoveSSE(map empty) {
+            map offsides_mask = ~(File::FA);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::EAST;
+            return (legal_knights >> offset) & empty;
+        }
+
+        constexpr map MoveSSW(map empty) {
+            map offsides_mask = ~(File::FH);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = (2 * Direction::SOUTH) + Direction::WEST;
+            return (legal_knights >> offset) & empty;
+        }
+
+        constexpr map MoveSEE(map empty) {
+            map offsides_mask = ~(File::FA | File::FB);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = Direction::SOUTH + (2 * Direction::EAST);
+            return (legal_knights >> offset) & empty;
+        }
+
+        constexpr map MoveSWW(map empty) {
+            map offsides_mask = ~(File::FG | File::FH);
+            map legal_knights = (this->position & offsides_mask);
+            uint_fast8_t offset = Direction::SOUTH + (2 * Direction::WEST);
+            return (legal_knights >> offset) & empty;
+        }
+
+        constexpr map GenMoves(map move_mask, map empty) {
+            map legal_moves = ( MoveNNE(empty) | MoveNNW(empty) | 
+                                MoveNEE(empty) | MoveNWW(empty) |
+                                MoveSSE(empty) | MoveSSW(empty) |
+                                MoveSEE(empty) | MoveSWW(empty) );
+            legal_moves &= move_mask;
+            return legal_moves;
+        }
+};
+
+class Pawn : public PieceSet {
+    bool unmoved_pieces = true;
+    map  en_passant = 0;
+
+    public:
+        template <bool white>
+        consteval map InitialRank() {
+            if constexpr (white) { return Rank::R2; }
+            else                 { return Rank::R7; }
+        }
+
+        constexpr Pawn(map pos, bool is_white, bool unmoved_pawns) :
+            PieceSet(pos, is_white), 
+            unmoved_pieces(unmoved_pawns)
+        {}
+
+        template <bool is_white>
+        constexpr Pawn(map pos) :
+            PieceSet(pos, is_white), 
+            unmoved_pieces(InitialRank<is_white>() & pos)
+        {}
+
+        template<bool white>
+        constexpr Pawn() : 
+            PieceSet(InitialRank<white>(), white), 
+            unmoved_pieces(true)
+        {}
+
+        template <bool white>
+        constexpr map MoveSingle(map empty) {
+            map mask = this->position;
+            if constexpr (white) { return empty & ShiftBoard<NORTH>(mask, 1); }
+            else                 { return empty & ShiftBoard<SOUTH>(mask, 1); }
+        }
+
+        template <bool white>
+        constexpr map MoveDouble(map empty) {
+            map unmoved_pawns = this->position & InitialRank<white>();
+            if constexpr (white) {
+                return empty & ShiftBoard<NORTH>(unmoved_pawns, 2); 
+            } else {
+                return empty & ShiftBoard<SOUTH>(unmoved_pawns, 2);
+            }
+        }
+
+        template <bool white>
+        constexpr map MoveAttack(map enemy) {
+            enemy &= this->en_passant;
+            map attacks;
+            if constexpr (white) {
+                attacks  = ShiftBoard<NORTH_EAST>(this->position, 1);
+                attacks |= ShiftBoard<NORTH_WEST>(this->position, 1);
+            } else {
+                attacks  = ShiftBoard<SOUTH_EAST>(this->position, 1);
+                attacks |= ShiftBoard<SOUTH_WEST>(this->position, 1);
+            } return enemy & attacks;
+        }
+
+        template <bool white, bool unmoved_pawns>
+        constexpr map GenMoves(map empty, map enemy) {
+            map mask = ( MoveSingle<white>(empty) | 
+                         MoveAttack<white>(enemy) );
+            if constexpr (unmoved_pawns) {
+                mask |= MoveDouble<white>(empty);
+            }
+            return mask;
+        }
+};
+
+class King : public PieceSet {
+    public:
+        constexpr King(map pos, bool white) : PieceSet(pos, white)
+        {}
+
+        constexpr map GenMoves(map move_mask) {
+            map legal_moves = ( ShiftBoard<NORTH_WEST>(this->position, 1) |
+                                ShiftBoard<NORTH_EAST>(this->position, 1) |
+                                ShiftBoard<SOUTH_EAST>(this->position, 1) |
+                                ShiftBoard<SOUTH_WEST>(this->position, 1) |
+                                ShiftBoard<NORTH>     (this->position, 1) |
+                                ShiftBoard<SOUTH>     (this->position, 1) |
+                                ShiftBoard<EAST>      (this->position, 1) |
+                                ShiftBoard<WEST>      (this->position, 1) );
+            return move_mask & legal_moves;
+        }
+};
+
+// Helps us prune move generation to only relevent piece sets
+class BoardState {
+    public:
+        bool white_turn;
+        
+        const bool black_pawns;
+        const bool black_knights;
+        const bool black_bishops;
+        const bool black_rooks;
+        const bool black_queen;
+        const bool black_king;
+
+        const bool white_pawns;
+        const bool white_knights;
+        const bool white_bishops;
+        const bool white_rooks;
+        const bool white_queen;
+        const bool white_king;
+
+        uint_fast32_t ply_count;
 };
 
 // A board knows all pieces and checkmasks
 class Board {
     public:
-        const map black_pawns;
-        const map black_knights;
-        const map black_bishops;
-        const map black_rooks;
-        const map black_queen;
-        const map black_king;
+        const Pawn   black_pawns;
+        const Knight black_knights;
+        const Bishop black_bishops;
+        const Rook   black_rooks;
+        const Queen  black_queen;
+        const King   black_king;
 
-        const map white_pawns;
-        const map white_knights;
-        const map white_bishops;
-        const map white_rooks;
-        const map white_queen;
-        const map white_king;
+        const Pawn   white_pawns;
+        const Knight white_knights;
+        const Bishop white_bishops;
+        const Rook   white_rooks;
+        const Queen  white_queen;
+        const King   white_king;
 
         const map black_pieces;
         const map white_pieces;
-        const map all_pieces;
+        const map occupied;
+        const map empty;
+
+        const map check_mask;
+        const map pin_mask;
 
     constexpr Board(
         map bp, map bn, map bb, map br, map bq, map bk,
         map wp, map wn, map wb, map wr, map wq, map wk) :
-            black_pawns(bp), black_knights(bn), black_bishops(bb),
-            black_rooks(br), black_queen(bq), black_king(bk),
+            black_pawns(Pawn(bp)),
+            black_knights(Knight(bn, Color::BLACK)),
+            black_bishops(Bishop(bb, 0)), 
+            black_rooks(Rook(br, Color::BLACK)), 
+            black_queen(Queen(bq, Color::BLACK)), 
+            black_king(King(bk, Color::BLACK)),
 
-            white_pawns(bp), white_knights(bn), white_bishops(bb),
-            white_rooks(br), white_queen(bq), white_king(bk),
+            white_pawns(bp),
+            white_knights(bn),
+            white_bishops(bb),
+            white_rooks(br),
+            white_queen(bq),
+            white_king(bk),
 
             black_pieces( bp | bn | bb | br | bq | bk ),
             white_pieces( wp | wn | wb | wr | wq | wk ),
-            all_pieces( black_pieces | white_pieces )
-            {}
+            occupied( black_pieces | white_pieces ),
+            empty( ~occupied ),
+
+            check_mask(0ull), pin_mask(0ull)
+        {
+            black_pawns = Pawn<Color::BLACK>(bp);
+        }
     
     template <bool is_white>
     constexpr map EnemyOrEmpty() {

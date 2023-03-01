@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -O0 -Wall
+CFLAGS = -g -O0 -Wall -std=c++20
 
 BIN=chess-ai
 

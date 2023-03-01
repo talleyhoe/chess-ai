@@ -13,16 +13,15 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +77 game.cpp
-badd +0 main.cpp
-badd +0 Makefile
-badd +226611 ~/.local/state/nvim/lsp.log
+badd +446 game.cpp
+badd +2 Makefile
+badd +3 .clangd
+badd +12 Notes.txt
 argglobal
 %argdel
 $argadd game.cpp
-$argadd main.cpp
-$argadd Makefile
 set stal=2
+tabnew +setlocal\ bufhidden=wipe
 tabnew +setlocal\ bufhidden=wipe
 tabnew +setlocal\ bufhidden=wipe
 tabrewind
@@ -37,18 +36,34 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-94,148fold
+79,119fold
+79,119fold
+79,119fold
+124,166fold
+124,166fold
+124,166fold
+222,276fold
+222,276fold
 let &fdl = &fdl
-let s:l = 165 - ((9 * winheight(0) + 23) / 46)
+79
+normal! zo
+79
+normal! zo
+124
+normal! zo
+124
+normal! zo
+222
+normal! zo
+let s:l = 400 - ((3 * winheight(0) + 19) / 38)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 165
-normal! 051|
+keepjumps 400
+normal! 025|
 tabnext
-edit main.cpp
+edit Notes.txt
 argglobal
-2argu
 balt game.cpp
 setlocal fdm=manual
 setlocal fde=0
@@ -60,16 +75,35 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 1 - ((0 * winheight(0) + 23) / 46)
+let s:l = 12 - ((11 * winheight(0) + 19) / 38)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 1
-normal! 0
+keepjumps 12
+normal! 038|
+tabnext
+edit .clangd
+argglobal
+balt game.cpp
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let &fdl = &fdl
+let s:l = 2 - ((1 * winheight(0) + 19) / 38)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 2
+normal! 04|
 tabnext
 edit Makefile
 argglobal
-3argu
 balt game.cpp
 setlocal fdm=manual
 setlocal fde=0
@@ -81,12 +115,12 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 1 - ((0 * winheight(0) + 23) / 46)
+let s:l = 2 - ((1 * winheight(0) + 19) / 38)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 1
-normal! 0
+keepjumps 2
+normal! 032|
 tabnext 1
 set stal=1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'

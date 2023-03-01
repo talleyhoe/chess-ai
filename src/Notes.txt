@@ -1,0 +1,12 @@
+ToDo:
+    - Finish constructors for all pieces. Default constructor should start us
+      in the initial position.
+    - Add calculation of check and pin masks to a struct that will hold all 
+      possible moves. 
+      - Once you fill a sliding piece, it should contain all attacked pieces.
+        If you prune those pieces from the propegator and refill, you'll be 
+        left with the pin attacks. En passant can remove two pieces on the 
+        same rank, your own and your enemy's. So treat en passant as an
+        alternative board position and rescan if needed. Should be able to run
+        in compile time 
+    - Include logic for pawn promotion
